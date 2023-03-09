@@ -9,6 +9,7 @@ classdef robot
         iDistanceMatrix;        % Interdistance Matrix
         mds;                    % Multi-Dimensional Scaling
         abyf;                   % Alpha-Beta-Gamma filter
+        kalman;
 
         diffDrive;              % Differential Drive
         controller;             % Robot Controller
@@ -38,6 +39,7 @@ classdef robot
             obj.historyData.poses = [];                                     % Mds poses associated with the captured scans
 
             obj.abyf = ABYFilter();                                         % Alpha Beta Gamma filter for the co2 sensor
+%             obj.kalman = KalmanF();
 
             obj.diffDrive = differentialDriveKinematics("Trackwidth", ...   % Differential-drive vehicle model to simulate simplified vehicle dynamics
                 1,"VehicleInputs","VehicleSpeedHeadingRate");
@@ -210,11 +212,14 @@ function [obj,rmds] = computeMds(obj, gt)
             lowValue =  co2Map(i,j) - 10;                                   % Get a random value around the true ppm co2
             highValue = co2Map(i,j) + 10;                                   % This is done in order to simulate the measure error of a sensor
 
-            for k=1:40                                                      % Read 40 data to regulate the Alha-Beta Filter;           
+            for k=1:100                                                      % Read 40 data to regulate the Alha-Beta Filter;           
                 nmeas = unifrnd(lowValue,highValue);                        % Read a noisy measurement
-                [obj.abyf,meas] = obj.abyf.updateF(nmeas,co2Map(i,j),1);    % Filter the co2 data using an Alpha Beta Gamma Filter
+                [obj.abyf,meas] = obj.abyf.updateF(nmeas,co2Map(i,j));    % Filter the co2 data using an Alpha Beta Gamma Filter
+                obj.kalman = obj.kalman.updateF(nmeas,co2Map(i,j));
             end
-            obj.abyf.plotGraph();
+            obj.abyf.plotF();
+%             obj.kalman.plotF();
+%             obj.kalman = obj.kalman.resetF();
             obj.abyf = obj.abyf.reset();                                    % After the robot moved the co2 data might be very different. 
         end                                                                 % Due to this it's necessary to reset the sensor in order to avoid that the filter need too much data to regulate itself
 

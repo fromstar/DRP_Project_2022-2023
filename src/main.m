@@ -6,7 +6,7 @@ function main()
     delete(gcp('nocreate'));
     
     load exampleMaps.mat;
-    N_STEP = 10;                                                             % Number of steps the the robots perform to move and capture data
+    N_STEP = 5;                                                             % Number of steps the the robots perform to move and capture data
     
     refMap = binaryOccupancyMap(simpleMap,1);
 %     refMap = binaryOccupancyMap(complexMap);
@@ -83,9 +83,7 @@ function createGlobMap(robots, truthMap, truthCo2)
     scans = [];                                                             % Concatenation of all lidar scans of all the robots
     poses = [];                                                             % Concatenation of all the poses where the scans are captured
     co2 = [];                                                               % Concatenation of all the co2 scans   
-    
-    a = robots{1}.rPositions;
-
+  
     for i=1:size(robots,2)
         rData = robots{i}.historyData;                                      % Get the data structure that collet all the scans made from a robot
         rscan = rData.scans;                                                % Lidar scans of one robot
@@ -98,7 +96,7 @@ function createGlobMap(robots, truthMap, truthCo2)
     end
 
     map = buildMap(scans,poses,3,10);                                       % Map creation
-    
+
     mapOcc = map.getOccupancy();
     co2Map = zeros(size(mapOcc,1), size(mapOcc,2));                         % Creation an initial co2 map to update
     x = poses(:,1);
@@ -120,105 +118,20 @@ function createGlobMap(robots, truthMap, truthCo2)
     completeMap = imfuse(mapOcc,co2Map);                                    % Fuse the area map and the co2 map in a single image
     groundTruth = imfuse(truthMap,rot90(truthCo2));                         % Complete map and co2 used for comparison 
     
+    x_grid = linspace(min(x), max(x), 100);
+    y_grid = linspace(min(y), max(y), 100);
+    [X,Y] = meshgrid(x_grid, y_grid);
+    Z = griddata(x,y,co2,X,Y,'cubic');
+    figure;
+    contourf(X,Y,Z);
+    xlabel('X [m]');
+    ylabel('Y [m]');
+    title('Mappa della distribuzione di CO2');
+    colorbar;
+
     figure
     imagesc(completeMap);
     figure
     imagesc(groundTruth);
     % show(map);
 end
-
-% function createGlobMap(robots,truthMap, truthCo2)    
-%     scans = [];                                                             % Concatenation of all lidar scans of all the robots
-%     poses = [];                                                             % Concatenation of all the poses where the scans are captured
-%     co2 = [];                                                               % Concatenation of all the co2 scans   
-%     
-%     a = robots{1}.rPositions;
-%     gt = [];
-%     for i=1:size(a,2)
-%         gt = [gt a(i).loc(1,1:2)'];
-%     end
-% 
-%     b = robots{1}.mds.values;
-%     mdsNew = [];
-%     for i=1:size(b,2)
-%         mdsNew = [mdsNew b{i}'];
-%     end
-%     
-%     cmds = regMds(gt,mdsNew);
-% 
-%     for i=1:size(robots,2)
-%         rData = robots{i}.historyData;                                      % Get the data structure that collet all the scans made from a robot
-%         rscan = rData.scans;                                                % Lidar scans of one robot
-%         rco2 = rData.co2;                                                   % Co2 Scans
-%         rposes = rData.poses;
-%         rposes(:,1) = rposes(:,1) + cmds(1,i);
-%         rposes(:,2) = rposes(:,2) + cmds(2,i);
-% 
-%         poses = cat(1,poses,rposes);
-%         co2 = [co2 rco2];
-%         scans = [scans rscan];
-%     end
-% 
-%     map = buildMap(scans,poses,3,10);                                       % Map creation
-%     
-%     mapOcc = map.getOccupancy();
-%     co2Map = zeros(size(mapOcc,1), size(mapOcc,2));                         % Creation an initial co2 map to update
-%     x = poses(:,1);
-%     y = poses(:,2);
-%     
-%     ij = world2grid(map,[x y]);                                             % Converting the poses of the co2 data in indices to populate the co2Matrix
-% 
-% %     normx = normalize(x,'range',[0 size(co2Map,1)]);
-% %     normy = normalize(y,'range',[0 size(co2Map,2)]);
-% 
-%     for i=1:size(ij,1)
-%         co2Map(ij(i,1),ij(i,2)) = co2(i);                                   % Populate co2 Matrix
-%     end
-% 
-%     co2Map = imgaussfilt(co2Map,10);                                        % Filter the co2 peaks with a gaussian filter
-%     co2Map = co2Map/max(max(co2Map));
-%     co2Map = co2Map * max(co2);
-%    
-%     completeMap = imfuse(mapOcc,co2Map);                                    % Fuse the area map and the co2 map in a single image
-%     groundTruth = imfuse(truthMap,rot90(truthCo2));                         % Complete map and co2 used for comparison 
-%     
-%     figure
-%     imagesc(completeMap);
-%     figure
-%     imagesc(groundTruth);
-%     % show(map);
-% end
-% 
-% function P = regMds(gt, cmds)
-%     gt = gt - gt(:,1);
-%     cmds = cmds - cmds(:,1);
-% 
-%     cmdsM = cmds;
-%     cmdsM(1,:) = cmdsM(1,:) * -1;
-% 
-%     gtTh = atan2(gt(2,1) - gt(2,2), gt(1,1) - gt(1,2));
-%     cmdsTh  = atan2(cmds(2,1) - cmds(2,2), cmds(1,1) - cmds(1,2));
-%     cmdsMTh  = atan2(cmdsM(2,1) - cmdsM(2,2), cmdsM(1,1) - cmdsM(1,2));
-% 
-%     th1 = gtTh - cmdsTh;
-%     th2 = gtTh - cmdsMTh;
-% 
-%     R1 = [cos(th1) -sin(th1);sin(th1) cos(th1)];
-%     R2 = [cos(th2) -sin(th2);sin(th2) cos(th2)];
-% 
-%     P1 = R1 * cmds;
-%     P2 = R2 * cmdsM;
-% 
-%     error1 = 0;
-%     error2 = 0;
-%     for i = 1:size(P1,2)
-%         error1 = error1 + norm(gt(:,i)- P1(:,i),2);
-%         error2 = error2 + norm(gt(:,i)- P2(:,i),2);
-%     end
-% 
-%     if error1 <= error2
-%         P = P1;
-%     else
-%         P = P2;
-%     end
-% end
