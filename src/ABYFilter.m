@@ -4,9 +4,11 @@ classdef ABYFilter
         beta;
         gamma;
         
-        x
-        P
-
+        x;
+        dx;
+        ddx;
+        dt;
+        
         noisy_ppm
         filtered_ppm
         true_ppm
@@ -19,12 +21,14 @@ classdef ABYFilter
         function obj = ABYFilter()
 
 
-            obj.alpha = 0.2;                  
-            obj.beta = 0.3;
-            obj.gamma = 0.5;
+            obj.alpha = 0.3;                  
+            obj.beta = 0.1;
+            obj.gamma = 0.1;
 
             obj.x = 0; % system estimation
-            obj.P = 1; % estimation's variance
+            obj.dx = 0;
+            obj.ddx = 0;
+            obj.dt = 1;
 
             obj.filtered_ppm = [];
             obj.true_ppm = [];
@@ -39,21 +43,27 @@ classdef ABYFilter
 
 %% Filter the noisy measurement
         function [obj,meas] = updateF(obj, noisyMeas, trueValue)
+            close all;
             if(obj.x == 0)
                 obj.x = noisyMeas;
-            end
-            x_prior = obj.x;
-            P_prior = obj.P + obj.gamma;
-            e = noisyMeas - x_prior;
-            obj.x = x_prior + obj.alpha * e;
-            obj.P = (1 - obj.alpha)^2 * P_prior + obj.beta * e^2;
-            
+                x_est = noisyMeas;
+            else
+                x_est = obj.x + (obj.dt*obj.dx) + (obj.ddx*((obj.dt^2)/2));
+
+                err = noisyMeas - x_est;
+
+                obj.x = obj.x + (obj.alpha*err);
+                obj.dx = obj.dx + (obj.beta*(err/obj.dt));
+                obj.ddx = obj.ddx + (obj.gamma*(err/(0.5*obj.dt^2)));
+            end          
+
             obj.true_ppm = [obj.true_ppm trueValue];
             obj.filtered_ppm = [obj.filtered_ppm obj.x];
             obj.noisy_ppm = [obj.noisy_ppm noisyMeas];
-            obj.predicted = [obj.predicted x_prior];
+            obj.predicted = [obj.predicted x_est];
             meas = obj.x;
         end
+
         function obj = reset(obj)
             obj.history.noisy_ppm = [obj.history.noisy_ppm, obj.noisy_ppm];
             obj.history.filtered_ppm = [obj.history.filtered_ppm, obj.filtered_ppm];
@@ -66,7 +76,8 @@ classdef ABYFilter
             obj.predicted = [];
 
             obj.x = 0;
-            obj.P = 1;
+            obj.dx = 0;
+            obj.ddx = 0;
         end
 
 %% Plot the measurements graph

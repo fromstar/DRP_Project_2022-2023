@@ -39,7 +39,7 @@ classdef robot
             obj.historyData.poses = [];                                     % Mds poses associated with the captured scans
 
             obj.abyf = ABYFilter();                                         % Alpha Beta Gamma filter for the co2 sensor
-%             obj.kalman = KalmanF();
+            obj.kalman = KalmanF();
 
             obj.diffDrive = differentialDriveKinematics("Trackwidth", ...   % Differential-drive vehicle model to simulate simplified vehicle dynamics
                 1,"VehicleInputs","VehicleSpeedHeadingRate");
@@ -218,8 +218,8 @@ function [obj,rmds] = computeMds(obj, gt)
                 obj.kalman = obj.kalman.updateF(nmeas,co2Map(i,j));
             end
             obj.abyf.plotF();
-%             obj.kalman.plotF();
-%             obj.kalman = obj.kalman.resetF();
+            obj.kalman.plotF();
+            obj.kalman = obj.kalman.resetF();
             obj.abyf = obj.abyf.reset();                                    % After the robot moved the co2 data might be very different. 
         end                                                                 % Due to this it's necessary to reset the sensor in order to avoid that the filter need too much data to regulate itself
 
