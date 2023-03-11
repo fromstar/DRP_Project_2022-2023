@@ -1,53 +1,56 @@
 classdef KalmanF
     properties
         A; % State Transition Matrix
-        H; % Measure Matrix
-        Q; % Covariance Noise
-        R; % Covariance Noise Matrix of the Measurement
-        
-        x; % Estimate of the system state
+        R; % Covariance Noise of the Measurement
         P; % Estimate covariance
+
+        x; % Estimate of the system state
         
         noisy_ppm
         filtered_ppm
         true_ppm
+        gain
 
         history
     end
 
     methods
         function obj = KalmanF()
-            obj.A = [1 1; 0 1];
-            obj.H = [1 0];
-            obj.Q = [0.01 0; 0 0.01];
+            obj.A = [1 0; 0 1];
             obj.R = 10;
             obj.x = [0; 0];
-            obj.P = [1 0; 0 1];
+            obj.P = 150;
             
             obj.filtered_ppm = [];
             obj.true_ppm = [];
             obj.noisy_ppm = [];
+            obj.gain = [];
 
             obj.history.noisy_ppm = [];
             obj.history.filtered_ppm = [];
             obj.history.true_ppm = [];
         end
-        function obj = updateF(obj, noisyMeas, trueValue)
+        function [obj,filtered_value] = updateF(obj, noisyMeas, trueValue)
             if(obj.x(1) == 0)
                 obj.x(1) = noisyMeas;
             end
             % Predict
             x_pred = obj.A*obj.x;
-            P_pred = obj.A * obj.P * obj.A' + obj.Q;
+            P_pred = obj.P;
 
             % Correction
-            K = P_pred * obj.H' / (obj.H * P_pred * obj.H' + obj.R);
-            obj.x = x_pred + K * (noisyMeas - obj.H * x_pred);
-            obj.P = (eye(2) - K * obj.H) * P_pred;
+            % Kalman Gain
+            K = P_pred  / (P_pred + obj.R);
 
+            obj.x = x_pred + K * (noisyMeas - x_pred);
+            obj.P = (1 - K) * P_pred;
+            
+            obj.gain = [obj.gain, K];
             obj.noisy_ppm = [obj.noisy_ppm, noisyMeas];
             obj.filtered_ppm = [obj.filtered_ppm, obj.x(1)];
             obj.true_ppm = [obj.true_ppm, trueValue];
+
+            filtered_value = obj.x(1);
         end
 
         function obj = resetF(obj)
@@ -59,7 +62,7 @@ classdef KalmanF
             obj.filtered_ppm = [];
             obj.true_ppm = [];
             obj.x = [0; 0];
-            obj.P = [1 0; 0 1];
+            obj.P = 150;
         end
         function plotF(obj)
             figure
@@ -76,6 +79,15 @@ classdef KalmanF
             plot(xa,y3,'-b')
 
             legend('True Values','Noisy Measurements','Filtered Values')
+            hold off
+        end
+        function plotG(obj)
+            x = uint32(1):uint32(size(obj.gain,2));
+            y = obj.gain;
+            figure
+            hold on
+                plot(x,y,'-b');
+                legend('Kalman Gain')
             hold off
         end
     end

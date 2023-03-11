@@ -30,7 +30,7 @@ P0 = P0 - P0(:,1);
 P0 = [-1, 0; 0, 1] * P0;
 
 % Create first agent properties
-[x1,y1] = agent(Reference(:,1), Theta(1), v, 0);
+[x1,y1] = agent(Reference(:,1), Theta, v, 0);
 
 % Set simulation
 figure; hold on; axis equal
@@ -53,14 +53,14 @@ legend("Moving node", "Reference", "Initial estimation")
 set(gca,'FontSize',24)
 
 trigger = 0;
-theta = Theta(1);
+theta = Theta;
 step = 1;
 fval_thresh = sigma_r*sz;
 theta_step = 90;
 for i = 2:step:10
     % Let node 1 move and turn left after certain time
     if i > 5 && trigger == 0
-        theta = Theta(1) + theta_step;
+        theta = Theta + theta_step;
         trigger = 1;
         
         % Estimate second configuration via MDS algorithm
