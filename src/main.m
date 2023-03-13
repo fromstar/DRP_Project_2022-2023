@@ -8,7 +8,7 @@ function main()
     load exampleMaps.mat;
 
     % How many scan each robot does
-    N_STEP = 30; 
+    N_STEP = 5; 
     
     refMap = binaryOccupancyMap(simpleMap,1);
 %     refMap = binaryOccupancyMap(complexMap);
@@ -82,7 +82,7 @@ function robots = updateMDSPositions(robots)
     for i=1:size(robots,2)
         for j=1:size(robots,2)
             if i ~= j
-                robots{i} = robots{i}.updateRPose(robots{j}.id, robots{j}.loc);
+                robots{i} = robots{i}.updateRPose(robots{j}.id, robots{j}.mdsLoc);
             end
         end
     end
@@ -132,31 +132,11 @@ function createGlobMap(robots, truthMap, truthCo2)
         co2 = [co2 rco2];
         scans = [scans rscan];
     end
-    
-    % Map creation
-    map = buildMap(scans,poses,3,10);                                       
-    
-    % Creation of an initial co2 map to update
-    mapOcc = map.getOccupancy();
-    co2Map = zeros(size(mapOcc,1), size(mapOcc,2));                        
     x = poses(:,1);
     y = poses(:,2);
-    
-    % Converting the poses of the co2 data in indices to populate the co2Matrix
-    ij = world2grid(map,[x y]);                                             
-    
-    % Populate co2 Matrix
-    for i=1:size(ij,1)
-        co2Map(ij(i,1),ij(i,2)) = co2(i);                                   
-    end
-    
-    % Filter the co2 peaks with a gaussian filter
-    co2Map = imgaussfilt(co2Map,10);                                        
-    co2Map = co2Map/max(max(co2Map));
-    co2Map = co2Map * max(co2);
-    
-    % Fuse the area map and the co2 map in a single image
-    completeMap = imfuse(mapOcc,co2Map);
+
+    % Map creation
+    map = buildMap(scans,poses,3,10);                                       
 
     % Complete map and co2 used for comparison 
     groundTruth = imfuse(truthMap,rot90(truthCo2));                         
@@ -209,8 +189,6 @@ function createGlobMap(robots, truthMap, truthCo2)
     
     % Plot the reconstructed map and the original map with the gas
     % distribution
-    figure
-    imagesc(completeMap);
     figure
     imagesc(groundTruth);
     figure

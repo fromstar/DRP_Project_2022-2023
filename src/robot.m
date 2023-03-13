@@ -1,7 +1,7 @@
 classdef robot
     properties
         id;                     % Robot Id
-        loc;                    % Robot's mds location
+        mdsLoc;                    % Robot's mds location
         absoluteLoc;            % Robot location inside the map
 
         historyData;            % Collection of all data scanned by the robot
@@ -31,7 +31,7 @@ classdef robot
             
             % Robot position in the mds reference system. 
             % Just initialized to [0,0]
-            obj.loc = [0 0 absLocation(3)];                                 
+            obj.mdsLoc = [0 0 absLocation(3)];                                 
             
             % Each robot keeps track of all the global positions using a
             % struct.
@@ -114,8 +114,8 @@ classdef robot
             % To disambiguate the mds the robot used as pivot move along 2
             % axes. So the it would be not anymore at 0,0 but it's new mds
             % position would coincide with the translation along xy.
-            obj.loc(1) = shift(1);
-            obj.loc(2) = shift(2);
+            obj.mdsLoc(1) = shift(1);
+            obj.mdsLoc(2) = shift(2);
             rmds = rmds';
 
             % Take the index of the robot that compute the MDS in its
@@ -142,8 +142,8 @@ classdef robot
         function obj = setMds(obj,mds)
             obj.mds = mds;
             loc = mds(obj.id);
-            obj.loc(1) = loc(1);
-            obj.loc(2) = loc(2);
+            obj.mdsLoc(1) = loc(1);
+            obj.mdsLoc(2) = loc(2);
         end
         
         % Return the mds
@@ -254,7 +254,7 @@ classdef robot
             % Concatenate the last co2 scan captured
             co2s(end+1) = co2;       
             % Concatenate the pose associated with the last scan captured
-            poses(end+1,:) = obj.loc;                                       
+            poses(end+1,:) = obj.mdsLoc;                                       
             
             % Updated the robot's struct
             obj.historyData.scans = scans;                                  
@@ -296,7 +296,7 @@ classdef robot
             map = buildMap(scans, poses,res,range);              
             inflateMap = map;
             inflate(inflateMap,obj.diffDrive.TrackWidth/20);
-            if(~checkOccupancy(inflateMap,obj.loc(1:2)))
+            if(~checkOccupancy(inflateMap,obj.mdsLoc(1:2)))
                 map = inflateMap;
             end
             map.OccupiedThreshold = 0.7;
@@ -315,7 +315,7 @@ classdef robot
                 map.XLocalLimits(2)];
             yLocalLimits = [-map.YLocalLimits(2) ...
                 map.YLocalLimits(2)];
-            theta = [obj.loc(3)-pi obj.loc(3)+pi];
+            theta = [obj.mdsLoc(3)-pi obj.mdsLoc(3)+pi];
             
             % Create a space where select a goal point
             space = stateSpaceDubins([xLocalLimits; ...                     
@@ -330,7 +330,7 @@ classdef robot
             planner = plannerAStarGrid(map);                      
             
             % Set starting position of the robots
-            startLocation = obj.loc;                                        
+            startLocation = obj.mdsLoc;                                        
             cnt = 0;
             
             % Continue to pick up a goal position until the path is
@@ -346,8 +346,8 @@ classdef robot
                     % Trying to pick an angle in front of the robot, if not
                     % possible expands the search area to 2Pi
                     if(cnt < 500)
-                        minTh = obj.loc(3) - pi/2;
-                        maxTh = obj.loc(3) + pi/2;
+                        minTh = obj.mdsLoc(3) - pi/2;
+                        maxTh = obj.mdsLoc(3) + pi/2;
                         theta = minTh + (maxTh-minTh).*rand(1,1);
                     else
                         Radius = Radius + 1;                                             % Select a random goal around the robot    
@@ -356,8 +356,8 @@ classdef robot
                     end
                     
                     % Conversion the goal position in xt coordinates
-                    x = obj.loc(1) + r * cos(theta);
-                    y = obj.loc(2) + r * sin(theta);
+                    x = obj.mdsLoc(1) + r * cos(theta);
+                    y = obj.mdsLoc(2) + r * sin(theta);
                     
                     % Check if the random goal is in a valid state not
                     % occupied and distant from walls
@@ -475,7 +475,7 @@ classdef robot
             th = robotCurrentPose(3);
             
             % How much a robot moved along xy axes
-            rMovement = [x - obj.loc(1), y - obj.loc(2), 0];
+            rMovement = [x - obj.mdsLoc(1), y - obj.mdsLoc(2), 0];
             
             % Update the robot's absolute location
             obj.absoluteLoc = obj.absoluteLoc + rMovement;
@@ -484,7 +484,7 @@ classdef robot
             obj.addPosition(obj.id, obj.absoluteLoc);
             
             % Update the robot's mds position after the movement
-            obj.loc = [x,y,th];
+            obj.mdsLoc = [x,y,th];
             close all force;
             disp(["Robot ", obj.id,": End position reached, waiting for new command.\n"]);
         end
