@@ -166,6 +166,40 @@ function createGlobMap(robots, truthMap, truthCo2)
     y_grid = linspace(min(y), max(y), 100);
     [X,Y] = meshgrid(x_grid, y_grid);
     Z = griddata(x,y,co2,X,Y,'cubic');
+    
+    %% Overlay co2 data with lidar scans:
+
+    reconMap = map.copy;
+
+    % Get the doublexdouble matrix from the occupancy matrix
+    data = reconMap.getOccupancy;
+
+    % Offset the matrix by 1/2
+    data = data - 0.5;
+    
+    % Round small values to zero
+    [dim_data_x, dim_data_y] = size(data);
+    for i = 1:dim_data_x
+        for j = 1:dim_data_y
+            if((data(i,j) <= 2e-4) && (data(i,j) >= -2e-4))
+                data(i,j) = 0;
+            end
+        end
+    end
+    
+    % Remove all empty rows and columns
+    data( ~any(data,2), : ) = [];  %rows
+    data( :, ~any(data,1) ) = [];  %columns
+    data = data + 0.5;
+    
+    % Resize the explored map to match the co2 structure:
+    Z_copy = Z;
+    [rowsize, colsize] = size(Z_copy);
+    rescaled_discoveryMap = imresize(data, [rowsize colsize]);
+
+    % Overlay co2 and lidar scans together
+    finalMap = imfuse(rescaled_discoveryMap, rot90(Z_copy));
+
     figure;
     contourf(X,Y,Z);
     xlabel('X [m]');
@@ -179,4 +213,7 @@ function createGlobMap(robots, truthMap, truthCo2)
     imagesc(completeMap);
     figure
     imagesc(groundTruth);
+    figure
+    imagesc(finalMap);
+    
 end
