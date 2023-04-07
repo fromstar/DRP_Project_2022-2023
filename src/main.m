@@ -2,7 +2,6 @@ function main()
     clc;
     close all;
     clear all;
-    delete(gcp('nocreate'));
     
     load exampleMaps.mat;
 
