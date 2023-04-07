@@ -1,4 +1,3 @@
-
 function main()
     clc;
     close all;
@@ -41,6 +40,7 @@ function main()
     for i=1:size(rLocations,1)
         id = num2str(i);
         robots{end+1} = robot(id, rLocations(i,:));
+        mkdir("img\",id)
     end
     
     % Send for each robot the absolute location of all the robots.
@@ -106,11 +106,11 @@ function robots = serialExecute(robots, refMap, co2Map, N_STEP)
         robots = updateMDSPositions(robots);
         disp(["Robot ", robots{j}.id,": Completed execution.\n"]);
     end
-    robots{1}.kalman.plotF();
 end
 
 %% Create a global map using all the robots data
 function createGlobMap(robots, truthMap, truthCo2)    
+    mkdir("img\","results")
     % Concatenation of all lidar scans of all the robots
     scans = [];
     % Concatenation of all the co2 scans   
@@ -137,6 +137,10 @@ function createGlobMap(robots, truthMap, truthCo2)
 
     % Map creation
     map = buildMap(scans,poses,3,10);                                       
+    figure
+    title("Reconstructed Map");
+    show(map)
+    savefig("img/results/reconstructed_map.fig")
 
     % Complete map and co2 used for comparison 
     groundTruth = imfuse(truthMap,rot90(truthCo2));                         
@@ -186,12 +190,16 @@ function createGlobMap(robots, truthMap, truthCo2)
     ylabel('Y [m]');
     title('Co2 Distribution');
     colorbar;
+    savefig("img/results/co2_distribution.fig")
     
     % Plot the reconstructed map and the original map with the gas
     % distribution
     figure
     imagesc(groundTruth);
+    savefig("img/results/ground_truth.fig")
     figure
     imagesc(finalMap);
+    savefig("img/results/result.fig")
     
+    close all
 end

@@ -64,7 +64,7 @@ classdef KalmanF
             obj.x = [0; 0];
             obj.P = 150;
         end
-        function plotF(obj)
+        function plotF(obj,id)
             figure
             xa = uint32(1):uint32(size(obj.true_ppm,2) + size(obj.history.true_ppm,2));
             
@@ -80,8 +80,9 @@ classdef KalmanF
 
             legend('True Values','Noisy Measurements','Filtered Values')
             hold off
+            savefig("img/"+id+"/"+id+"_Kalman_filter.fig")
         end
-        function plotG(obj)
+        function plotG(obj,id)
             x = uint32(1):uint32(size(obj.gain,2));
             y = obj.gain;
             figure
@@ -89,6 +90,7 @@ classdef KalmanF
                 plot(x,y,'-b');
                 legend('Kalman Gain')
             hold off
+            savefig("img/"+id+"/"+id+"_Kalman_gain.fig")
         end
     end
 end

@@ -1,7 +1,7 @@
 classdef robot
     properties
         id;                     % Robot Id
-        mdsLoc;                    % Robot's mds location
+        mdsLoc;                 % Robot's mds location
         absoluteLoc;            % Robot location inside the map
 
         historyData;            % Collection of all data scanned by the robot
@@ -228,8 +228,8 @@ classdef robot
                 % Filter the read measure
                 [obj.kalman,meas] = obj.kalman.updateF(nmeas,co2Map(i,j));
             end
-            obj.kalman.plotG();
-            obj.kalman.plotF();
+            obj.kalman.plotG(obj.id);
+            obj.kalman.plotF(obj.id);
              % After the movement the co2 value should be different.
              % Resetting the filter accelerate the output of a good value
             obj.kalman = obj.kalman.resetF();
